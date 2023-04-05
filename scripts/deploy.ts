@@ -15,10 +15,17 @@ async function main() {
   const Token = await ethers.getContractFactory('token');
   const token = await Token.deploy();
   await token.deployed();
+
+  await storeContract(
+    escrow.address,
+    JSON.parse(String(token.interface.format('json'))),
+    'Token',
+    'Token'
+  );
   console.log(`token deployed on ${token.address}`);
   console.log(`escrow deployed on ${escrow.address}`);
-  await token.approve(escrow.address, 100000000000);
-
+  const tx = await token.increaseAllowance(escrow.address, 100000000000);
+  await tx.wait();
   await escrow.createRequest(
     '0xb824465A26846eF8f7E6Ce3a2AEEc2F359690218',
     110000000,
@@ -26,7 +33,7 @@ async function main() {
     1000000
   );
 
-  await token.approve(escrow.address, 100000000000);
+  //await token.approve(escrow.address, 100000000000);
 
   await escrow.createRequest(
     '0xb824465A26846eF8f7E6Ce3a2AEEc2F359690218',

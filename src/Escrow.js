@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import EscrowDetails from './EscrowDetails';
 const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
+const tokenContract = require('./build/polygon/testnet/Token/Token.json');
 const ethers = require('ethers');
 
 const networks = {
@@ -29,6 +30,14 @@ export const Escrow = () => {
   const [selectedescrow, setselectesescrow] = useState('');
   const [Id, setId] = useState(null);
   const [idValue, setIdValue] = useState('');
+  const [buyer, setBuyer] = useState('');
+  const [token, setToken] = useState('');
+  const [amount, setAmount] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [submittedBuyer, setSubmittedBuyer] = useState('');
+  const [submittedToken, setSubmittedToken] = useState('');
+  const [submittedAmount, setSubmittedAmount] = useState('');
+  const [submittedExpiry, setSubmittedExpiry] = useState('');
 
   const connectWallet = async () => {
     if (!window.ethereum) {
@@ -51,8 +60,7 @@ export const Escrow = () => {
 
     setescrow(contract);
     const Allescrow = await contract.getAllEscrows();
-    console.log('hooo', Allescrow);
-    Allescrow.map((value) => value.amount);
+
     setallescrow(Allescrow[0]);
     const Bal = await Provider.getBalance(Address);
     const bal = ethers.utils.formatEther(Bal);
@@ -75,6 +83,54 @@ export const Escrow = () => {
     }
   };
 
+  const handlerequestChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === 'buyer') {
+      setBuyer(value);
+    } else if (name === 'token') {
+      setToken(value);
+    } else if (name === 'amount') {
+      setAmount(value);
+    } else {
+      setExpiry(value);
+    }
+  };
+  const handlerequestSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittedBuyer(ethers.utils.getAddress(buyer));
+    setSubmittedToken(ethers.utils.getAddress(token));
+    setSubmittedAmount(ethers.utils.parseUnits(amount, 'ether'));
+    setSubmittedExpiry(expiry);
+    console.log(token);
+    const erc = new ethers.Contract(
+      submittedToken,
+      tokenContract.abi,
+      provider.getSigner()
+    );
+    console.log(erc);
+    console.log(
+      await erc.balanceOf('0xb824465A26846eF8f7E6Ce3a2AEEc2F359690218')
+    );
+    const approve = await erc
+      .connect(account)
+      .increaseAllowance(escrowContract.address, amount);
+    await approve.wait();
+    const val = ethers.utils.formatEther(submittedAmount);
+
+    const tx = await escrow
+      .connect(account)
+      .createRequest(
+        submittedBuyer,
+        submittedExpiry,
+        submittedToken,
+        Number(val)
+      );
+    await tx.wait();
+    const Allescrow = await escrow.getAllEscrows();
+    setallescrow(Allescrow[0]);
+  };
+
   const handleInputChange = (event) => {
     setIdValue(event.target.value);
   };
@@ -94,12 +150,7 @@ export const Escrow = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
   };
-  const handleConfirm = async () => {
-    console.log('address', await account.getAddress());
-    console.log(await escrow.getEscrowBalance(Id));
-    const tx = await escrow.connect(account).confirmReceived(Id);
-    await tx.wait();
-  };
+
   return (
     <div>
       <u onClick={connectWallet}> {connect} </u>
@@ -107,6 +158,47 @@ export const Escrow = () => {
       <p> user balance : {balance}</p>
       <input type='number' value={idValue} onChange={handleInputChange} />
       <button onClick={handleSearchClick}>Search</button>
+      <div>
+        <form onSubmit={handlerequestSubmit}>
+          <label htmlFor='buyer'>Buyer:</label>
+          <input
+            type='text'
+            name='buyer'
+            id='buyer'
+            value={buyer}
+            onChange={handlerequestChange}
+          />
+
+          <label htmlFor='token'>Token:</label>
+          <input
+            type='text'
+            name='token'
+            id='token'
+            value={token}
+            onChange={handlerequestChange}
+          />
+
+          <label htmlFor='amount'>Amount:</label>
+          <input
+            type='text'
+            name='amount'
+            id='amount'
+            value={amount}
+            onChange={handlerequestChange}
+          />
+
+          <label htmlFor='expiry'>Expiry:</label>
+          <input
+            type='text'
+            name='expiry'
+            id='expiry'
+            value={expiry}
+            onChange={handlerequestChange}
+          />
+
+          <button type='submit'>create escrow</button>
+        </form>
+      </div>
 
       {selectedescrow ? (
         <EscrowDetails escrow={selectedescrow} />
