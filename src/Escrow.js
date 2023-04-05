@@ -27,11 +27,8 @@ export const Escrow = () => {
   const [escrow, setescrow] = useState('');
   const [allescrow, setallescrow] = useState([]);
   const [selectedescrow, setselectesescrow] = useState('');
-  const [buyer, setBuyer] = useState('');
-  const [expiry, setExpiry] = useState(0);
-  const [token, setToken] = useState('');
-  const [amount, setAmount] = useState(0);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [Id, setId] = useState(null);
+  const [idValue, setIdValue] = useState('');
 
   const connectWallet = async () => {
     if (!window.ethereum) {
@@ -40,20 +37,6 @@ export const Escrow = () => {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
     const Provider = new ethers.providers.Web3Provider(window.ethereum);
     setprovider(Provider);
-    if (Provider.network !== 'matic') {
-      try {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [
-            {
-              ...networks['polygon'],
-            },
-          ],
-        });
-      } catch (e) {
-        alert('Please switch to polygon network');
-      }
-    }
 
     const Account = Provider.getSigner();
     setaccount(Account);
@@ -68,78 +51,85 @@ export const Escrow = () => {
 
     setescrow(contract);
     const Allescrow = await contract.getAllEscrows();
-    //console.log('hooo', Allescrow);
-    //Allescrow.map((value) => value.amount);
+    console.log('hooo', Allescrow);
+    Allescrow.map((value) => value.amount);
     setallescrow(Allescrow[0]);
-  };
-  const createRequest = async () => {
-    try {
-      await escrow.createRequest(buyer, expiry, token, amount);
+    const Bal = await Provider.getBalance(Address);
+    const bal = ethers.utils.formatEther(Bal);
 
-      setErrorMessage('');
-    } catch (error) {
-      setErrorMessage(error.message);
+    setbalance(`${bal} Matic`);
+
+    if (Provider.network !== 'matic') {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              ...networks['polygon'],
+            },
+          ],
+        });
+      } catch (e) {
+        alert('Please switch to polygon network');
+      }
     }
   };
 
   const handleInputChange = (event) => {
-    setInputValue(event.target.value);
+    setIdValue(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSearchClick = async () => {
+    let value = Number(idValue);
+    console.log(`Searching for number ${value}...`);
+    try {
+      const searchedescrow = await escrow.getEscrowRequest(value);
+      setselectesescrow(searchedescrow);
+    } catch (e) {
+      console.log(e);
+      alert('not found');
+    }
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    createRequest();
+  };
+  const handleConfirm = async () => {
+    console.log('address', await account.getAddress());
+    console.log(await escrow.getEscrowBalance(Id));
+    const tx = await escrow.connect(account).confirmReceived(Id);
+    await tx.wait();
   };
   return (
     <div>
       <u onClick={connectWallet}> {connect} </u>
       <p>wallet address: {address}</p>
       <p> user balance : {balance}</p>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Buyer Address:</label>
-          <input
-            type='text'
-            value={buyer}
-            onChange={(event) => setBuyer(event.target.value)}
-          />
-        </div>
-        <div>
-          <label>Expiry Time:</label>
-          <input
-            type='number'
-            value={expiry}
-            onChange={(event) => setExpiry(event.target.value)}
-          />
-        </div>
-        <div>
-          <label>Token Address:</label>
-          <input
-            type='text'
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
-          />
-        </div>
-        <div>
-          <label>Token Amount:</label>
-          <input
-            type='number'
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-          />
-        </div>
-        <button type='submit'>Create Request</button>
-        {errorMessage && <p>{errorMessage}</p>}
-      </form>
+      <input type='number' value={idValue} onChange={handleInputChange} />
+      <button onClick={handleSearchClick}>Search</button>
 
-      {allescrow.map((escrow) => (
-        <div key={escrow.id}>
-          <h2>Escrow ID: {escrow.id}</h2>
-          <p>Buyer: {escrow.buyer}</p>
-          <p>Seller: {escrow.seller}</p>
-          <p>Amount: {escrow.amount}</p>
-        </div>
-      ))}
+      {selectedescrow ? (
+        <EscrowDetails escrow={selectedescrow} />
+      ) : (
+        <ul>
+          {allescrow.map((escroww, index) => (
+            <li key={index}>
+              <u
+                onClick={async () => {
+                  const selected = await escrow.getEscrowRequest(
+                    Number(escroww.id)
+                  );
+                  console.log(selected.buyer);
+                  setselectesescrow(selected);
+                  setId(Number(selected.id));
+                }}
+              >
+                {Number(escroww.id)}
+              </u>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
