@@ -1,0 +1,141 @@
+/* Body */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #beaaf0;
+}
+
+/* Container */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 32px;
+  font-weight: bold;
+}
+
+header u {
+  font-size: 18px;
+  color: #007bff;
+  cursor: pointer;
+}
+
+/* Forms */
+form label {
+  display: block;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+form p {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group input[type='submit'] {
+  background-color: #28a745;
+}
+
+.form-group input[type='submit']:hover {
+  background-color: #218838;
+}
+
+.form-group input[type='text'],
+.form-group input[type='number'] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+/* Buttons */
+button {
+  background-color: #148e0c;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #0069d9;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+table th,
+table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ccc;
+}
+
+table th {
+  font-weight: bold;
+  background-color: #f5f5f5;
+}
+
+/* Messages */
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.success-message {
+  color: green;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+  .container {
+    max-width: 100%;
+    padding: 10px;
+  }
+
+  form label {
+    font-size: 16px;
+  }
+
+  form p {
+    font-size: 14px;
+  }
+
+  .form-group input[type='text'],
+  .form-group input[type='number'] {
+    width: 100%;
+    font-size: 14px;
+  }
+}

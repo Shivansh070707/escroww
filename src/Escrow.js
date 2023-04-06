@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import EscrowDetails from './EscrowDetails';
+import EscrowDetails from './EscrowDetails.js';
+import './Escrow.css';
 const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
 const tokenContract = require('./build/polygon/testnet/Token/Token.json');
 const ethers = require('ethers');
@@ -100,23 +101,20 @@ export const Escrow = () => {
     e.preventDefault();
     setSubmittedBuyer(ethers.utils.getAddress(buyer));
     setSubmittedToken(ethers.utils.getAddress(token));
-    setSubmittedAmount(ethers.utils.parseUnits(amount, 'ether'));
+    setSubmittedAmount(ethers.utils.parseEther(amount));
     setSubmittedExpiry(expiry);
     console.log(token);
+    console.log(submittedAmount);
     const erc = new ethers.Contract(
       submittedToken,
       tokenContract.abi,
       provider.getSigner()
     );
-    console.log(erc);
-    console.log(
-      await erc.balanceOf('0xb824465A26846eF8f7E6Ce3a2AEEc2F359690218')
-    );
+
     const approve = await erc
       .connect(account)
-      .increaseAllowance(escrowContract.address, amount);
+      .approve(escrowContract.address, submittedAmount);
     await approve.wait();
-    const val = ethers.utils.formatEther(submittedAmount);
 
     const tx = await escrow
       .connect(account)
@@ -124,7 +122,7 @@ export const Escrow = () => {
         submittedBuyer,
         submittedExpiry,
         submittedToken,
-        Number(val)
+        submittedAmount
       );
     await tx.wait();
     const Allescrow = await escrow.getAllEscrows();

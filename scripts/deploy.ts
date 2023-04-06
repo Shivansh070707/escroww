@@ -41,6 +41,12 @@ async function main() {
     token.address,
     1000000
   );
+  await escrow.createRequest(
+    '0xb824465A26846eF8f7E6Ce3a2AEEc2F359690218',
+    110000000,
+    token.address,
+    1000000
+  );
 }
 
 // We recommend this pattern to be able to use async/await everywhere
