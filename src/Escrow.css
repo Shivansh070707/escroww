@@ -1,7 +1,7 @@
 /* Body */
 body {
   font-family: Arial, sans-serif;
-  background-color: #beaaf0;
+  background-color: #efddc9;
 }
 
 /* Container */
@@ -75,6 +75,7 @@ form p {
 button {
   background-color: #148e0c;
   color: white;
+  margin-left: auto;
   padding: 10px 20px;
   border: none;
   border-radius: 4px;

@@ -25,6 +25,59 @@ button {
   border-radius: 5px;
   cursor: pointer;
 }
+/* Apply a box-sizing border-box to all elements */
+* {
+  box-sizing: border-box;
+}
+
+/* Style for the form container */
+.form-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Style for the form */
+.escrow-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Style for the form groups */
+.form-group {
+  margin-bottom: 20px;
+}
+
+/* Style for the input fields */
+.form-control {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  transition: border-color 0.3s ease-in-out;
+}
+
+/* Style for the input fields when focused */
+.form-control:focus {
+  outline: none;
+  border-color: #7ea1ff;
+}
+
+/* Style for the submit button */
+.btn-primary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #7ea1ff;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Style for the submit button when hovered */
+.btn-primary:hover {
+  background-color: #6c90ff;
+}
 
 button:hover {
   background-color: #3e8e41;

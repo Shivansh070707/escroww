@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Escrowdetail.css';
+import Web3Modal from 'web3modal';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast } from 'react-toastify';
 const ethers = require('ethers');
@@ -22,33 +23,59 @@ const checkStatus = (status) => {
 function EscrowDetails(props) {
   const { id, seller, buyer, token, amount, expiry, status } = props.escrow;
   const [Status, setStatus] = useState('');
+  const [isbuyer, setisbuyer] = useState(false);
+  const [isseller, setisseller] = useState(false);
+  const [account, setaccount] = useState('');
+  const [address, setaddress] = useState('');
+  const [contract, setcontract] = useState('');
+  const [provider, setprovider] = useState('');
+  const [connect, setconnect] = useState(false);
 
   const [Id, setId] = useState(id);
-  const check = checkStatus(status);
-  console.log(check);
+
+  useEffect(() => {
+    connection();
+    const check = checkStatus(status);
+    setStatus(check);
+  }, [isbuyer, isseller, id]);
+
   // setStatus(check.toString());
   const currentDateInSeconds = Math.floor(Date.now() / 1000);
   const expirydate = currentDateInSeconds + expiry;
-
-  const handleConfirm = async () => {
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
-
-    const contract = new ethers.Contract(
+  const connection = async () => {
+    const web3Modal = new Web3Modal();
+    const connection = await web3Modal.connect();
+    const Provider = new ethers.providers.Web3Provider(connection);
+    const Contract = new ethers.Contract(
       escrowContract.address,
       escrowContract.abi,
       Provider.getSigner()
     );
     const Account = Provider.getSigner();
+    const Address = await Account.getAddress();
+    setaddress(Address);
+    setaccount(Account);
+    setcontract(Contract);
+    setprovider(Provider);
+    if (address == seller) {
+      setisseller(true);
+    } else if (address === buyer) {
+      setisbuyer(true);
+    }
+  };
 
+  const handleConfirm = async () => {
     try {
-      const tx = await contract.connect(Account).confirmReceived(Id);
+      const tx = await contract.connect(account).confirmReceived(Id);
       await tx.wait();
     } catch (err) {
       toast.error(`${err.error.data.message}`);
     }
   };
   const handleCancel = async () => {
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
+    const web3Modal = new Web3Modal();
+    const connection = await web3Modal.connect();
+    const Provider = new ethers.providers.Web3Provider(connection);
     const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
     const contract = new ethers.Contract(
       escrowContract.address,
@@ -103,15 +130,16 @@ function EscrowDetails(props) {
       {/* <p>
         <strong>expiry:</strong> {convertEpoch(expirydate)}
       </p> */}
-      {/* 
+
       <p>
         <strong>Status:</strong> {Status}
-      </p> */}
+      </p>
 
-      <button onClick={handleConfirm}> Confirm </button>
-      <ToastContainer />
-      <button onClick={handleCancel}> Cancel </button>
-      <button onClick={handleWithdraw}> Withdraw Tokens</button>
+      <>{isbuyer && <button onClick={handleConfirm}> Confirm </button>}</>
+      <>{isbuyer && <button onClick={handleCancel}> Cancel </button>}</>
+      <>
+        {isseller && <button onClick={handleWithdraw}> Withdraw Tokens</button>}
+      </>
     </div>
   );
 }

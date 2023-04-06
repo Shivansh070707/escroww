@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import EscrowDetails from './EscrowDetails.js';
 import './Escrow.css';
+import Web3Modal from 'web3modal';
 const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
 const tokenContract = require('./build/polygon/testnet/Token/Token.json');
 const ethers = require('ethers');
@@ -39,13 +40,14 @@ export const Escrow = () => {
   const [submittedToken, setSubmittedToken] = useState('');
   const [submittedAmount, setSubmittedAmount] = useState('');
   const [submittedExpiry, setSubmittedExpiry] = useState('');
+  const [allescrewtext, setallescrewtext] = useState('');
+  const [isbuyer, setisbuyer] = useState(false);
+  const [isseller, setisseller] = useState(false);
 
   const connectWallet = async () => {
-    if (!window.ethereum) {
-      alert('Please Install Metamask');
-    }
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
+    const web3Modal = new Web3Modal();
+    const connection = await web3Modal.connect();
+    const Provider = new ethers.providers.Web3Provider(connection);
     setprovider(Provider);
 
     const Account = Provider.getSigner();
@@ -61,8 +63,23 @@ export const Escrow = () => {
 
     setescrow(contract);
     const Allescrow = await contract.getAllEscrows();
+    const arr = Allescrow[0];
+    for (let i = arr.length; i < 0; i--) {
+      console.log('hii');
+      let bool = false;
+      if (arr[i].buyer == address) {
+        console.log('hii');
+        setselectesescrow(arr[i]);
+        break;
+      } else if (arr[i].seller == address) {
+        setselectesescrow(arr[i]);
+        break;
+      }
+    }
+    alert('No escrow');
 
-    setallescrow(Allescrow[0]);
+    //setallescrewtext('All Escrows :');
+    //setallescrow(Allescrow[0]);
     const Bal = await Provider.getBalance(Address);
     const bal = ethers.utils.formatEther(Bal);
 
@@ -126,6 +143,7 @@ export const Escrow = () => {
       );
     await tx.wait();
     const Allescrow = await escrow.getAllEscrows();
+
     setallescrow(Allescrow[0]);
   };
 
@@ -157,51 +175,70 @@ export const Escrow = () => {
       <input type='number' value={idValue} onChange={handleInputChange} />
       <button onClick={handleSearchClick}>Search</button>
       <div>
-        <form onSubmit={handlerequestSubmit}>
-          <label htmlFor='buyer'>Buyer:</label>
-          <input
-            type='text'
-            name='buyer'
-            id='buyer'
-            value={buyer}
-            onChange={handlerequestChange}
-          />
+        {(isbuyer || isseller) && (
+          <div className='form-container'>
+            <form className='escrow-form' onSubmit={handlerequestSubmit}>
+              <div className='form-group'>
+                <input
+                  type='text'
+                  name='buyer'
+                  id='buyer'
+                  value={buyer}
+                  onChange={handlerequestChange}
+                  placeholder='Enter buyer name...'
+                  className='form-control'
+                />
+              </div>
 
-          <label htmlFor='token'>Token:</label>
-          <input
-            type='text'
-            name='token'
-            id='token'
-            value={token}
-            onChange={handlerequestChange}
-          />
+              <div className='form-group'>
+                <input
+                  type='text'
+                  name='token'
+                  id='token'
+                  value={token}
+                  onChange={handlerequestChange}
+                  placeholder='Enter token...'
+                  className='form-control'
+                />
+              </div>
 
-          <label htmlFor='amount'>Amount:</label>
-          <input
-            type='text'
-            name='amount'
-            id='amount'
-            value={amount}
-            onChange={handlerequestChange}
-          />
+              <div className='form-group'>
+                <input
+                  type='text'
+                  name='amount'
+                  id='amount'
+                  value={amount}
+                  onChange={handlerequestChange}
+                  placeholder='Enter amount...'
+                  className='form-control'
+                />
+              </div>
 
-          <label htmlFor='expiry'>Expiry:</label>
-          <input
-            type='text'
-            name='expiry'
-            id='expiry'
-            value={expiry}
-            onChange={handlerequestChange}
-          />
+              <div className='form-group'>
+                <input
+                  type='text'
+                  name='expiry'
+                  id='expiry'
+                  value={expiry}
+                  onChange={handlerequestChange}
+                  placeholder='Enter expiry...'
+                  className='form-control'
+                />
+              </div>
 
-          <button type='submit'>create escrow</button>
-        </form>
+              <button type='submit' className='btn btn-primary'>
+                Create Escrow
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {selectedescrow ? (
         <EscrowDetails escrow={selectedescrow} />
       ) : (
         <ul>
+          <h2>{allescrewtext}</h2>
           {allescrow.map((escroww, index) => (
             <li key={index}>
               <u
@@ -214,7 +251,7 @@ export const Escrow = () => {
                   setId(Number(selected.id));
                 }}
               >
-                {Number(escroww.id)}
+                {`Escrow id: ${Number(escroww.id)}`}
               </u>
             </li>
           ))}
