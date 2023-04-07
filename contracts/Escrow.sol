@@ -1,9 +1,10 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+
 contract Escrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Counters for Counters.Counter;
@@ -21,7 +22,8 @@ contract Escrow is ReentrancyGuard {
     enum Status {
         active,
         released,
-        refunded
+        withdrawn,
+        cancelled
     }
     //mapping of escrow id to escrow request
     mapping(uint256 => EscrowRequest) escrowRequests;
@@ -41,8 +43,12 @@ contract Escrow is ReentrancyGuard {
             "Tokens Released"
         );
         require(
-            escrowRequests[id].status != Status.refunded,
-            "Tokens Refunded"
+            escrowRequests[id].status != Status.cancelled,
+            "Escrow Expired And Tokens Refunded"
+        );
+        require(
+            escrowRequests[id].status != Status.withdrawn,
+            "Request Withdrawn And Tokens Refunded"
         );
         _;
     }
@@ -55,6 +61,7 @@ contract Escrow is ReentrancyGuard {
     event RequestCompleted(uint256 indexed id, address seller, address buyer);
     event RequestCancelled(uint256 indexed id, address seller);
     event RequestWithdrawn(uint256 indexed id, address seller);
+
     // //Thrown when no escrow exists for this id
     // error InvalidId();
     // //Thrown when the caller is not the token seller
@@ -98,9 +105,11 @@ contract Escrow is ReentrancyGuard {
         escrowRequests[id] = request;
         //update the escrow balance mapping for this id
         escrowBalances[id] = amount;
+        //increment counter
         totalRequests.increment();
         emit RequestCreated(id, msg.sender, buyer, amount);
     }
+
     /** @dev Confirms the escrow completion and releases the tokens from escrow contract to the buyer
      * @param id Id of the request
      */
@@ -114,6 +123,7 @@ contract Escrow is ReentrancyGuard {
         _releaseTokens(id);
         emit RequestCompleted(id, msg.sender, request.buyer);
     }
+
     /** @dev Cancels the request after it has expired and refunds the tokens back to the seller
      * @param id Id of the request
      */
@@ -126,9 +136,10 @@ contract Escrow is ReentrancyGuard {
         //check if request has expired (cancel only allowed if escrow request has expired)
         require(request.expiry < block.timestamp, "Not Expired");
         //transfer token back to the owner i.e. seller
-        _refundTokens(id);
+        _refundTokens(id, Status.cancelled);
         emit RequestCancelled(id, msg.sender);
     }
+
     /** @dev Cancels the request before it has expired and refunds the tokens back to the seller
      * @param id Id of the request
      */
@@ -141,9 +152,10 @@ contract Escrow is ReentrancyGuard {
         //check the status if escrow request has expired (withdraw only allowed if request still active)
         require(request.expiry >= block.timestamp, "Expired");
         //transfer token back to the owner i.e. seller
-        _refundTokens(id);
+        _refundTokens(id, Status.withdrawn);
         emit RequestWithdrawn(id, msg.sender);
     }
+
     /** @dev transfers the tokens to the buyer
      * @param id Id of the request
      */
@@ -161,10 +173,11 @@ contract Escrow is ReentrancyGuard {
         //transfer the tokens to the buyer
         IERC20(request.token).safeTransfer(request.buyer, escrowAmount);
     }
+
     /** @dev transfers the tokens to the seller
      * @param id Id of the request
      */
-    function _refundTokens(uint256 id) internal {
+    function _refundTokens(uint256 id, Status status) internal {
         EscrowRequest storage request = escrowRequests[id];
         uint256 totalTokenBal = IERC20(request.token).balanceOf(address(this));
         uint256 escrowAmount = escrowBalances[id];
@@ -173,11 +186,12 @@ contract Escrow is ReentrancyGuard {
         //update escrow balance to 0 for this id
         escrowBalances[id] = 0;
         //update the status for the escrow request
-        request.status = Status.refunded;
+        request.status = status;
         request.amount = 0;
         //transfer the tokens to the seller
         IERC20(request.token).safeTransfer(request.seller, escrowAmount);
     }
+
     /** @dev Gets the escrow balance for the given id
      * @param id Id of the request
      * @return bal Balance of escrow contract
@@ -187,6 +201,7 @@ contract Escrow is ReentrancyGuard {
     ) external view checkIsValid(id) returns (uint256 bal) {
         bal = escrowBalances[id];
     }
+
     /** @dev Gets the escrow details for the given id
      * @param id Id of the request
      * @return EscrowRequest details of the escrow
@@ -196,6 +211,7 @@ contract Escrow is ReentrancyGuard {
     ) external view checkIsValid(id) returns (EscrowRequest memory) {
         return escrowRequests[id];
     }
+
     /** @dev Gets all the escrow requests and the totalRequests
      * @return result details of the all escrows
      * @return totalRequests returns the total number of requests in the escrow
@@ -212,10 +228,71 @@ contract Escrow is ReentrancyGuard {
         }
         return (requests, total);
     }
+
     /**@dev Gets the total number of requests
      *@return totalRequests the total number of requests
      */
     function getTotalRequests() external view returns (uint256) {
         return totalRequests.current();
+    }
+
+    /**@dev Checks if the escrow has expired
+        @param id Id of the request
+     * @return bool True if request has expired and false otherwise
+     */
+    function checkIsExpired(uint256 id) external view returns (bool) {
+        EscrowRequest storage request = escrowRequests[id];
+        if (request.expiry < block.timestamp) return true;
+        return false;
+    }
+
+    /**@dev Returns all the escrows of the seller
+        @param acc Address of seller
+     * @return EscrowRequests[] array of all the escrow requests of the seller
+     */
+    function getSellerEscrows(
+        address acc
+    ) external view returns (EscrowRequest[] memory) {
+        uint256 total = totalRequests.current();
+        uint j = 0;
+        for (uint i = 0; i < total; i++) {
+            if (escrowRequests[i].seller == acc) {
+                j++;
+            }
+        }
+        EscrowRequest[] memory requests = new EscrowRequest[](j);
+        uint k;
+        for (uint i = 0; i < total; i++) {
+            if (escrowRequests[i].seller == acc) {
+                requests[k] = escrowRequests[i];
+                k++;
+            }
+        }
+        return requests;
+    }
+
+    /**@dev Returns all the escrows of the buyer
+        @param acc Address of buyer
+     * @return EscrowRequests[] array of all the escrow requests of the buyer
+     */
+    function getBuyerEscrows(
+        address acc
+    ) external view returns (EscrowRequest[] memory) {
+        uint256 total = totalRequests.current();
+        uint j = 0;
+        for (uint i = 0; i < total; i++) {
+            if (escrowRequests[i].buyer == acc) {
+                j++;
+            }
+        }
+        EscrowRequest[] memory requests = new EscrowRequest[](j);
+        uint k;
+        for (uint i = 0; i < total; i++) {
+            if (escrowRequests[i].buyer == acc) {
+                requests[k] = escrowRequests[i];
+                k++;
+            }
+        }
+        return requests;
     }
 }

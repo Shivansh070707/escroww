@@ -5,6 +5,12 @@ import Web3Modal from 'web3modal';
 const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
 const tokenContract = require('./build/polygon/testnet/Token/Token.json');
 const ethers = require('ethers');
+export const CurrentStatus = {
+  active: 0,
+  released: 1,
+  withdrawn: 2,
+  refunded: 3,
+};
 
 const networks = {
   polygon: {
@@ -25,24 +31,30 @@ export const Escrow = () => {
   const [balance, setbalance] = useState('');
   const [address, setaddress] = useState('');
   const [connect, setconnect] = useState('Connect Wallet');
+  const [hasClicked, setHasClicked] = useState(false);
   const [provider, setprovider] = useState(null);
-  const [inputValue, setInputValue] = useState('');
+  const [showForm, setShowForm] = useState(false);
   const [escrow, setescrow] = useState('');
   const [allescrow, setallescrow] = useState([]);
-  const [selectedescrow, setselectesescrow] = useState('');
+  const [selectedbuyerescrow, setselectedbuyerescrow] = useState('');
+  const [selectedsellerescrow, setselectedsellerescrow] = useState('');
   const [Id, setId] = useState(null);
   const [idValue, setIdValue] = useState('');
   const [buyer, setBuyer] = useState('');
+  const [allbuyerescrows, setallbuyerescrows] = useState([]);
+  const [allsellerescrow, setallsellerescrow] = useState([]);
   const [token, setToken] = useState('');
   const [amount, setAmount] = useState('');
-  const [expiry, setExpiry] = useState('');
   const [submittedBuyer, setSubmittedBuyer] = useState('');
   const [submittedToken, setSubmittedToken] = useState('');
   const [submittedAmount, setSubmittedAmount] = useState('');
-  const [submittedExpiry, setSubmittedExpiry] = useState('');
   const [allescrewtext, setallescrewtext] = useState('');
   const [isbuyer, setisbuyer] = useState(false);
   const [isseller, setisseller] = useState(false);
+  const [buyeres, setbuyeres] = useState('');
+  const [selleres, setselleres] = useState('');
+  const [buyertext, setbuyertext] = useState('');
+  const [newescrow, setnewescrow] = useState('');
 
   const connectWallet = async () => {
     const web3Modal = new Web3Modal();
@@ -64,22 +76,34 @@ export const Escrow = () => {
     setescrow(contract);
     const Allescrow = await contract.getAllEscrows();
     const arr = Allescrow[0];
-    for (let i = arr.length; i < 0; i--) {
-      console.log('hii');
-      let bool = false;
-      if (arr[i].buyer == address) {
+    for (let i = arr.length - 1; i >= 0; i--) {
+      console.log(Address);
+      if (arr[i].buyer == Address) {
         console.log('hii');
-        setselectesescrow(arr[i]);
+        setisbuyer(true);
+        setbuyeres(arr[i]);
         break;
-      } else if (arr[i].seller == address) {
-        setselectesescrow(arr[i]);
+      } else if (arr[i].seller == Address) {
+        setselleres(arr[i]);
+        setisseller(true);
         break;
       }
     }
-    alert('No escrow');
+    const Allbuyerescrow = await contract.getBuyerEscrows(Address);
+    console.log(Allbuyerescrow);
+    setallbuyerescrows(Allbuyerescrow);
 
-    //setallescrewtext('All Escrows :');
-    //setallescrow(Allescrow[0]);
+    setbuyertext('Buyer Active Transactions');
+
+    const Allsellerescrow = await contract.getSellerEscrows(Address);
+    console.log(Allsellerescrow);
+    setallsellerescrow(Allsellerescrow);
+    setallescrewtext('Seller Active Transactions');
+
+    console.log(Allsellerescrow);
+    console.log(CurrentStatus.active);
+
+    setallescrow(Allescrow[0]);
     const Bal = await Provider.getBalance(Address);
     const bal = ethers.utils.formatEther(Bal);
 
@@ -110,8 +134,6 @@ export const Escrow = () => {
       setToken(value);
     } else if (name === 'amount') {
       setAmount(value);
-    } else {
-      setExpiry(value);
     }
   };
   const handlerequestSubmit = async (e) => {
@@ -119,9 +141,6 @@ export const Escrow = () => {
     setSubmittedBuyer(ethers.utils.getAddress(buyer));
     setSubmittedToken(ethers.utils.getAddress(token));
     setSubmittedAmount(ethers.utils.parseEther(amount));
-    setSubmittedExpiry(expiry);
-    console.log(token);
-    console.log(submittedAmount);
     const erc = new ethers.Contract(
       submittedToken,
       tokenContract.abi,
@@ -135,47 +154,49 @@ export const Escrow = () => {
 
     const tx = await escrow
       .connect(account)
-      .createRequest(
-        submittedBuyer,
-        submittedExpiry,
-        submittedToken,
-        submittedAmount
-      );
+      .createRequest(submittedBuyer, 1800, submittedToken, submittedAmount);
     await tx.wait();
-    const Allescrow = await escrow.getAllEscrows();
 
-    setallescrow(Allescrow[0]);
+    const Allescrow = await escrow.getSellerEscrows(account);
+
+    setnewescrow(Allescrow[Allescrow.length - 1]);
   };
 
   const handleInputChange = (event) => {
     setIdValue(event.target.value);
   };
 
-  const handleSearchClick = async () => {
-    let value = Number(idValue);
-    console.log(`Searching for number ${value}...`);
-    try {
-      const searchedescrow = await escrow.getEscrowRequest(value);
-      setselectesescrow(searchedescrow);
-    } catch (e) {
-      console.log(e);
-      alert('not found');
-    }
-  };
+  // const handleSearchClick = async () => {
+  //   let value = Number(idValue);
+  //   console.log(`Searching for number ${value}...`);
+  //   try {
+  //     const searchedescrow = await escrow.getEscrowRequest(value);
+  //     //setselectesescrow(searchedescrow);
+  //   } catch (e) {
+  //     console.log(e);
+  //     alert('not found');
+  //   }
+  // };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
   };
+
+  function handleClickForm() {
+    setShowForm(true);
+    setHasClicked(true);
+  }
 
   return (
     <div>
       <u onClick={connectWallet}> {connect} </u>
       <p>wallet address: {address}</p>
       <p> user balance : {balance}</p>
-      <input type='number' value={idValue} onChange={handleInputChange} />
-      <button onClick={handleSearchClick}>Search</button>
+      {/* <input type='number' value={idValue} onChange={handleInputChange} />
+      <button onClick={handleSearchClick}>Search</button> */}
+      {!hasClicked && <button onClick={handleClickForm}>Send</button>}
       <div>
-        {(isbuyer || isseller) && (
+        {showForm && (
           <div className='form-container'>
             <form className='escrow-form' onSubmit={handlerequestSubmit}>
               <div className='form-group'>
@@ -185,7 +206,7 @@ export const Escrow = () => {
                   id='buyer'
                   value={buyer}
                   onChange={handlerequestChange}
-                  placeholder='Enter buyer name...'
+                  placeholder='Enter buyer address...'
                   className='form-control'
                 />
               </div>
@@ -214,47 +235,66 @@ export const Escrow = () => {
                 />
               </div>
 
-              <div className='form-group'>
-                <input
-                  type='text'
-                  name='expiry'
-                  id='expiry'
-                  value={expiry}
-                  onChange={handlerequestChange}
-                  placeholder='Enter expiry...'
-                  className='form-control'
-                />
-              </div>
-
               <button type='submit' className='btn btn-primary'>
-                Create Escrow
+                Send Tokens
               </button>
             </form>
           </div>
         )}
       </div>
+      {newescrow ? <EscrowDetails escrow={selectedsellerescrow} /> : <></>}
 
-      {selectedescrow ? (
-        <EscrowDetails escrow={selectedescrow} />
+      {selectedsellerescrow ? (
+        <EscrowDetails escrow={selectedsellerescrow} />
       ) : (
         <ul>
-          <h2>{allescrewtext}</h2>
-          {allescrow.map((escroww, index) => (
-            <li key={index}>
-              <u
-                onClick={async () => {
-                  const selected = await escrow.getEscrowRequest(
-                    Number(escroww.id)
-                  );
-                  console.log(selected.buyer);
-                  setselectesescrow(selected);
-                  setId(Number(selected.id));
-                }}
-              >
-                {`Escrow id: ${Number(escroww.id)}`}
-              </u>
-            </li>
-          ))}
+          <h3>{allescrewtext}</h3>
+          {allsellerescrow
+            .filter((escroww) => escroww.status == CurrentStatus.active)
+            .map((escroww, index) => (
+              <li key={index}>
+                <u
+                  onClick={async () => {
+                    const selected = await escrow.getEscrowRequest(
+                      Number(escroww.id)
+                    );
+                    setselectedsellerescrow(selected);
+                    setId(Number(selected.id));
+                  }}
+                >
+                  {`Escrow id: ${Number(escroww.id)}`}
+                </u>
+              </li>
+            ))}
+          {allescrow.filter((escroww) => escroww.status == CurrentStatus.active)
+            .length === 0 && <p>You have no active transactions </p>}
+        </ul>
+      )}
+
+      {selectedbuyerescrow ? (
+        <EscrowDetails escrow={selectedbuyerescrow} />
+      ) : (
+        <ul>
+          <h3>{buyertext}</h3>
+          {allbuyerescrows
+            .filter((escroww) => escroww.status == CurrentStatus.active)
+            .map((escroww, index) => (
+              <li key={index}>
+                <u
+                  onClick={async () => {
+                    const selected = await escrow.getEscrowRequest(
+                      Number(escroww.id)
+                    );
+                    setselectedbuyerescrow(selected);
+                    setId(Number(selected.id));
+                  }}
+                >
+                  {`Escrow id: ${Number(escroww.id)}`}
+                </u>
+              </li>
+            ))}
+          {allescrow.filter((escroww) => escroww.status == CurrentStatus.active)
+            .length === 0 && <p>You have no transactions as buyer </p>}
         </ul>
       )}
     </div>

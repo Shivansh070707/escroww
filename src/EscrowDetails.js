@@ -8,13 +8,16 @@ const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
 export const CurrentStatus = {
   active: 0,
   released: 1,
-  refunded: 2,
+  withdrawn: 2,
+  refunded: 3,
 };
 const checkStatus = (status) => {
   if (status == CurrentStatus.active) {
     return 'Active';
   } else if (status == CurrentStatus.released) {
     return 'Released';
+  } else if (status == CurrentStatus.withdrawn) {
+    return 'Withdrawn';
   } else {
     return 'Refunded';
   }
@@ -30,6 +33,7 @@ function EscrowDetails(props) {
   const [contract, setcontract] = useState('');
   const [provider, setprovider] = useState('');
   const [connect, setconnect] = useState(false);
+  const [bool, setbool] = useState(false);
 
   const [Id, setId] = useState(id);
 
@@ -37,7 +41,7 @@ function EscrowDetails(props) {
     connection();
     const check = checkStatus(status);
     setStatus(check);
-  }, [isbuyer, isseller, id]);
+  }, []);
 
   // setStatus(check.toString());
   const currentDateInSeconds = Math.floor(Date.now() / 1000);
@@ -57,11 +61,9 @@ function EscrowDetails(props) {
     setaccount(Account);
     setcontract(Contract);
     setprovider(Provider);
-    if (address == seller) {
-      setisseller(true);
-    } else if (address === buyer) {
-      setisbuyer(true);
-    }
+    const Bool = await Contract.checkIsExpired(id);
+    console.log(Bool);
+    setbool(Bool);
   };
 
   const handleConfirm = async () => {
@@ -135,10 +137,20 @@ function EscrowDetails(props) {
         <strong>Status:</strong> {Status}
       </p>
 
-      <>{isbuyer && <button onClick={handleConfirm}> Confirm </button>}</>
-      <>{isbuyer && <button onClick={handleCancel}> Cancel </button>}</>
       <>
-        {isseller && <button onClick={handleWithdraw}> Withdraw Tokens</button>}
+        {address == seller && (
+          <button onClick={handleConfirm}> Confirm </button>
+        )}
+      </>
+      <>
+        {address == seller && bool && (
+          <button onClick={handleCancel}> Cancel </button>
+        )}
+      </>
+      <>
+        {address == seller && !bool && (
+          <button onClick={handleWithdraw}> Withdraw Tokens</button>
+        )}
       </>
     </div>
   );

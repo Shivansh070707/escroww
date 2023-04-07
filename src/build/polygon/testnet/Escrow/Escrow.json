@@ -1,5 +1,5 @@
 {
-  "address": "0x51B5171deF5C4389EF056f1FC11625f18FCeF92c",
+  "address": "0x8bBE40b7d4DeCB1e53A50650E1E711d46458d96D",
   "network": {
     "name": "maticmum",
     "chainId": 80001
@@ -103,6 +103,24 @@
     },
     {
       "type": "function",
+      "name": "checkIsExpired",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "id"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "confirmReceived",
       "constant": false,
       "payable": false,
@@ -187,6 +205,54 @@
     },
     {
       "type": "function",
+      "name": "getBuyerEscrows",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "acc"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple[]",
+          "components": [
+            {
+              "type": "uint256",
+              "name": "id"
+            },
+            {
+              "type": "address",
+              "name": "seller"
+            },
+            {
+              "type": "address",
+              "name": "buyer"
+            },
+            {
+              "type": "address",
+              "name": "token"
+            },
+            {
+              "type": "uint256",
+              "name": "amount"
+            },
+            {
+              "type": "uint256",
+              "name": "expiry"
+            },
+            {
+              "type": "uint8",
+              "name": "status"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "getEscrowBalance",
       "constant": true,
       "stateMutability": "view",
@@ -219,6 +285,54 @@
       "outputs": [
         {
           "type": "tuple",
+          "components": [
+            {
+              "type": "uint256",
+              "name": "id"
+            },
+            {
+              "type": "address",
+              "name": "seller"
+            },
+            {
+              "type": "address",
+              "name": "buyer"
+            },
+            {
+              "type": "address",
+              "name": "token"
+            },
+            {
+              "type": "uint256",
+              "name": "amount"
+            },
+            {
+              "type": "uint256",
+              "name": "expiry"
+            },
+            {
+              "type": "uint8",
+              "name": "status"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getSellerEscrows",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "acc"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple[]",
           "components": [
             {
               "type": "uint256",
