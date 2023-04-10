@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import EscrowDetails from './EscrowDetails.js';
 import './Escrow.css';
 import Web3Modal from 'web3modal';
+import CoinbaseWalletSDK from '@coinbase/wallet-sdk';
+import WalletConnect from '@walletconnect/web3-provider';
 const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
 const tokenContract = require('./build/polygon/testnet/Token/Token.json');
 const ethers = require('ethers');
@@ -10,6 +12,21 @@ export const CurrentStatus = {
   released: 1,
   withdrawn: 2,
   refunded: 3,
+};
+export const providerOptions = {
+  coinbasewallet: {
+    package: CoinbaseWalletSDK,
+    options: {
+      appName: 'Web 3 Modal Demo',
+      infuraId: process.env.API_KEY,
+    },
+  },
+  walletconnect: {
+    package: WalletConnect,
+    options: {
+      infuraId: process.env.API_KEY,
+    },
+  },
 };
 
 const networks = {
@@ -55,9 +72,12 @@ export const Escrow = () => {
   const [selleres, setselleres] = useState('');
   const [buyertext, setbuyertext] = useState('');
   const [newescrow, setnewescrow] = useState('');
-
+  const [ver, setver] = useState(false);
+  const web3Modal = new Web3Modal({
+    providerOptions, // required
+  });
   const connectWallet = async () => {
-    const web3Modal = new Web3Modal();
+    // const web3Modal = new Web3Modal();
     const connection = await web3Modal.connect();
     const Provider = new ethers.providers.Web3Provider(connection);
     setprovider(Provider);
@@ -90,18 +110,14 @@ export const Escrow = () => {
       }
     }
     const Allbuyerescrow = await contract.getBuyerEscrows(Address);
-    console.log(Allbuyerescrow);
     setallbuyerescrows(Allbuyerescrow);
 
     setbuyertext('Buyer Active Transactions');
 
     const Allsellerescrow = await contract.getSellerEscrows(Address);
-    console.log(Allsellerescrow);
+
     setallsellerescrow(Allsellerescrow);
     setallescrewtext('Seller Active Transactions');
-
-    console.log(Allsellerescrow);
-    console.log(CurrentStatus.active);
 
     setallescrow(Allescrow[0]);
     const Bal = await Provider.getBalance(Address);
@@ -157,34 +173,27 @@ export const Escrow = () => {
       .createRequest(submittedBuyer, 1800, submittedToken, submittedAmount);
     await tx.wait();
 
-    const Allescrow = await escrow.getSellerEscrows(account);
-
+    const Allescrow = await escrow.getSellerEscrows(address);
+    setShowForm(false);
     setnewescrow(Allescrow[Allescrow.length - 1]);
+
+    const Allsellerescrow = await escrow.getSellerEscrows(address);
+    setallsellerescrow(Allsellerescrow);
+    const Allbuyerescrow = await escrow.getBuyerEscrows(address);
+    console.log(Allbuyerescrow);
+    setallbuyerescrows(Allbuyerescrow);
   };
 
   const handleInputChange = (event) => {
     setIdValue(event.target.value);
   };
 
-  // const handleSearchClick = async () => {
-  //   let value = Number(idValue);
-  //   console.log(`Searching for number ${value}...`);
-  //   try {
-  //     const searchedescrow = await escrow.getEscrowRequest(value);
-  //     //setselectesescrow(searchedescrow);
-  //   } catch (e) {
-  //     console.log(e);
-  //     alert('not found');
-  //   }
-  // };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-  };
-
   function handleClickForm() {
     setShowForm(true);
     setHasClicked(true);
+  }
+  function handleverify() {
+    setver(true);
   }
 
   return (
@@ -194,7 +203,7 @@ export const Escrow = () => {
       <p> user balance : {balance}</p>
       {/* <input type='number' value={idValue} onChange={handleInputChange} />
       <button onClick={handleSearchClick}>Search</button> */}
-      {!hasClicked && <button onClick={handleClickForm}>Send</button>}
+      {!hasClicked && <button onClick={handleClickForm}>Send Tokens</button>}
       <div>
         {showForm && (
           <div className='form-container'>
@@ -242,7 +251,7 @@ export const Escrow = () => {
           </div>
         )}
       </div>
-      {newescrow ? <EscrowDetails escrow={selectedsellerescrow} /> : <></>}
+      {newescrow ? <EscrowDetails escrow={newescrow} /> : <></>}
 
       {selectedsellerescrow ? (
         <EscrowDetails escrow={selectedsellerescrow} />
@@ -270,33 +279,37 @@ export const Escrow = () => {
             .length === 0 && <p>You have no active transactions </p>}
         </ul>
       )}
-
+      <button onClick={handleverify}> Verify Tokens </button>
       {selectedbuyerescrow ? (
         <EscrowDetails escrow={selectedbuyerescrow} />
-      ) : (
-        <ul>
-          <h3>{buyertext}</h3>
-          {allbuyerescrows
-            .filter((escroww) => escroww.status == CurrentStatus.active)
-            .map((escroww, index) => (
-              <li key={index}>
-                <u
-                  onClick={async () => {
-                    const selected = await escrow.getEscrowRequest(
-                      Number(escroww.id)
-                    );
-                    setselectedbuyerescrow(selected);
-                    setId(Number(selected.id));
-                  }}
-                >
-                  {`Escrow id: ${Number(escroww.id)}`}
-                </u>
-              </li>
-            ))}
-          {allescrow.filter((escroww) => escroww.status == CurrentStatus.active)
-            .length === 0 && <p>You have no transactions as buyer </p>}
-        </ul>
-      )}
+      ) : null}
+      {ver ? (
+        <div id='ver'>
+          <ul>
+            <h3>{buyertext}</h3>
+            {allbuyerescrows
+              .filter((escroww) => escroww.status == CurrentStatus.active)
+              .map((escroww, index) => (
+                <li key={index}>
+                  <u
+                    onClick={async () => {
+                      const selected = await escrow.getEscrowRequest(
+                        Number(escroww.id)
+                      );
+                      setselectedbuyerescrow(selected);
+                      setId(Number(selected.id));
+                    }}
+                  >
+                    {`Escrow id: ${Number(escroww.id)}`}
+                  </u>
+                </li>
+              ))}
+            {allescrow.filter(
+              (escroww) => escroww.status == CurrentStatus.active
+            ).length === 0 && <p>You have no transactions as buyer </p>}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 };

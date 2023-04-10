@@ -24,15 +24,12 @@ const checkStatus = (status) => {
 };
 
 function EscrowDetails(props) {
-  const { id, seller, buyer, token, amount, expiry, status } = props.escrow;
-  const [Status, setStatus] = useState('');
-  const [isbuyer, setisbuyer] = useState(false);
-  const [isseller, setisseller] = useState(false);
-  const [account, setaccount] = useState('');
+  let { id, seller, buyer, token, amount, expiry, status } = props.escrow;
+  const [Status, setStatus] = useState(status);
+  const [confirm, setconfirm] = useState(false);
+
   const [address, setaddress] = useState('');
-  const [contract, setcontract] = useState('');
-  const [provider, setprovider] = useState('');
-  const [connect, setconnect] = useState(false);
+
   const [bool, setbool] = useState(false);
 
   const [Id, setId] = useState(id);
@@ -41,7 +38,7 @@ function EscrowDetails(props) {
     connection();
     const check = checkStatus(status);
     setStatus(check);
-  }, []);
+  }, [id, status, amount]);
 
   // setStatus(check.toString());
   const currentDateInSeconds = Math.floor(Date.now() / 1000);
@@ -58,18 +55,28 @@ function EscrowDetails(props) {
     const Account = Provider.getSigner();
     const Address = await Account.getAddress();
     setaddress(Address);
-    setaccount(Account);
-    setcontract(Contract);
-    setprovider(Provider);
-    const Bool = await Contract.checkIsExpired(id);
-    console.log(Bool);
+
+    const Bool = await Contract.checkIsExpired(Id);
     setbool(Bool);
   };
 
   const handleConfirm = async () => {
+    const web3Modal = new Web3Modal();
+    const connection = await web3Modal.connect();
+    const Provider = new ethers.providers.Web3Provider(connection);
+    const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
+    const contract = new ethers.Contract(
+      escrowContract.address,
+      escrowContract.abi,
+      Provider.getSigner()
+    );
+    const Account = Provider.getSigner();
     try {
-      const tx = await contract.connect(account).confirmReceived(Id);
+      const tx = await contract.connect(Account).confirmReceived(Id);
       await tx.wait();
+      const check = await contract.getEscrowRequest(id);
+      amount = ethers.utils.formatEther(check.amount);
+      status = 'Released';
     } catch (err) {
       toast.error(`${err.error.data.message}`);
     }
@@ -88,11 +95,16 @@ function EscrowDetails(props) {
     try {
       const tx = await contract.connect(Account).cancelRequest(id);
       await tx.wait();
+      console.log(status);
+      setStatus('Cancelled');
+      console.log(status);
     } catch (err) {
       toast.error(`${err.error.data.message}`);
     }
   };
   const handleWithdraw = async () => {
+    const web3Modal = new Web3Modal();
+    const connection = await web3Modal.connect();
     const Provider = new ethers.providers.Web3Provider(window.ethereum);
 
     const contract = new ethers.Contract(
@@ -104,6 +116,7 @@ function EscrowDetails(props) {
     try {
       const tx = await contract.connect(Account).withdrawTokens(Id);
       await tx.wait();
+      setStatus('Withdrawn');
     } catch (err) {
       toast.error(`${err.error.data.message}`);
     }
@@ -138,7 +151,7 @@ function EscrowDetails(props) {
       </p>
 
       <>
-        {address == seller && (
+        {address == seller && !confirm && (
           <button onClick={handleConfirm}> Confirm </button>
         )}
       </>
