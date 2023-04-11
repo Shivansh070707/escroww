@@ -1,12 +1,10 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.9;
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
-
-
-contract Escrow is ReentrancyGuardUpgradeable {
+contract EscrowV2 is ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     //stores all the details of an escrow
@@ -18,6 +16,7 @@ contract Escrow is ReentrancyGuardUpgradeable {
         uint256 amount;
         uint256 expiry;
         Status status;
+        uint256 left;
     }
     //represents all the stages of an escrow
     enum Status {
@@ -88,7 +87,8 @@ contract Escrow is ReentrancyGuardUpgradeable {
             token,
             amount,
             block.timestamp + expiry,
-            Status.active
+            Status.active,
+            amount
         );
         escrowRequests[id] = request;
         //update the escrow balance mapping for this id
@@ -103,7 +103,7 @@ contract Escrow is ReentrancyGuardUpgradeable {
     function confirmReceived(
         uint256 id
     ) external checkIsValid(id) checkIsActive(id) nonReentrant {
-        EscrowRequest memory request = escrowRequests[id];
+        EscrowRequest storage request = escrowRequests[id];
         //check if caller is the seller (only the token seller can call the function)
         require(request.seller == msg.sender, "Unauthorised");
         //release the tokens to the buyer
@@ -116,7 +116,7 @@ contract Escrow is ReentrancyGuardUpgradeable {
     function cancelRequest(
         uint256 id
     ) external checkIsValid(id) checkIsActive(id) nonReentrant {
-        EscrowRequest memory request = escrowRequests[id];
+        EscrowRequest storage request = escrowRequests[id];
         //check if caller is the seller (only the token seller can call the function)
         require(request.seller == msg.sender, "Unauthorised");
         //check if request has expired (cancel only allowed if escrow request has expired)
@@ -131,7 +131,7 @@ contract Escrow is ReentrancyGuardUpgradeable {
     function withdrawTokens(
         uint256 id
     ) external checkIsValid(id) checkIsActive(id) nonReentrant {
-        EscrowRequest memory request = escrowRequests[id];
+        EscrowRequest storage request = escrowRequests[id];
         //check if caller is the seller (only the token seller can call the function)
         require(request.seller == msg.sender, "Unauthorised");
         //check the status if escrow request has expired (withdraw only allowed if request still active)
@@ -145,26 +145,32 @@ contract Escrow is ReentrancyGuardUpgradeable {
      */
     function _releaseTokens(uint256 id) internal {
         EscrowRequest storage request = escrowRequests[id];
-        uint256 escrowBalance = escrowBalances[id];
-        require(escrowBalance > 0, "Escrow Balance is 0");
+        uint256 totalTokenBal = IERC20(request.token).balanceOf(address(this));
+        uint256 escrowAmount = escrowBalances[id];
+        require(escrowAmount > 0, "Escrow Balance is 0");
+        require(totalTokenBal - escrowAmount >= 0, "Escrow fund mismatch");
         //update escrow balance to 0 for this id
         escrowBalances[id] = 0;
         //update the status for the escrow request
         request.status = Status.released;
+        request.left = 0;
         //transfer the tokens to the buyer
-        IERC20(request.token).safeTransfer(request.buyer, escrowBalance);
+        IERC20(request.token).safeTransfer(request.buyer, escrowAmount);
     }
     /** @dev transfers the tokens to the seller
      * @param id Id of the request
      */
     function _refundTokens(uint256 id, Status status) internal {
         EscrowRequest storage request = escrowRequests[id];
+        uint256 totalTokenBal = IERC20(request.token).balanceOf(address(this));
         uint256 escrowAmount = escrowBalances[id];
         require(escrowAmount > 0, "Escrow Balance is 0");
+        require(totalTokenBal - escrowAmount >= 0, "Escrow fund mismatch");
         //update escrow balance to 0 for this id
         escrowBalances[id] = 0;
         //update the status for the escrow request
         request.status = status;
+        request.left = 0;
         //transfer the tokens to the seller
         IERC20(request.token).safeTransfer(request.seller, escrowAmount);
     }
@@ -204,7 +210,7 @@ contract Escrow is ReentrancyGuardUpgradeable {
      * @return bool True if request has expired and false otherwise
      */
     function checkIsExpired(uint256 id) external view returns (bool) {
-        EscrowRequest memory request = escrowRequests[id];
+        EscrowRequest storage request = escrowRequests[id];
         if (request.expiry < block.timestamp) return true;
         return false;
     }
@@ -216,15 +222,15 @@ contract Escrow is ReentrancyGuardUpgradeable {
         address acc
     ) external view returns (EscrowRequest[] memory) {
         uint256 total = totalRequests.current();
-        uint256 j = 0;
-        for (uint256 i = 0; i < total; i++) {
+        uint j = 0;
+        for (uint i = 0; i < total; i++) {
             if (escrowRequests[i].seller == acc) {
                 j++;
             }
         }
         EscrowRequest[] memory requests = new EscrowRequest[](j);
-        uint256 k = 0;
-        for (uint256 i = 0; i < total; i++) {
+        uint k;
+        for (uint i = 0; i < total; i++) {
             if (escrowRequests[i].seller == acc) {
                 requests[k] = escrowRequests[i];
                 k++;
@@ -240,20 +246,23 @@ contract Escrow is ReentrancyGuardUpgradeable {
         address acc
     ) external view returns (EscrowRequest[] memory) {
         uint256 total = totalRequests.current();
-        uint256 j = 0;
-        for (uint256 i = 0; i < total; i++) {
+        uint j = 0;
+        for (uint i = 0; i < total; i++) {
             if (escrowRequests[i].buyer == acc) {
                 j++;
             }
         }
         EscrowRequest[] memory requests = new EscrowRequest[](j);
-        uint256 k;
-        for (uint256 i = 0; i < total; i++) {
+        uint k;
+        for (uint i = 0; i < total; i++) {
             if (escrowRequests[i].buyer == acc) {
                 requests[k] = escrowRequests[i];
                 k++;
             }
         }
         return requests;
+    }
+    function getEscrowBalances(uint256 id) external view returns (uint256) {
+        return escrowBalances[id];
     }
 }

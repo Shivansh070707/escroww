@@ -3,6 +3,13 @@ import './Escrowdetail.css';
 import Web3Modal from 'web3modal';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast } from 'react-toastify';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+
+
+
 const ethers = require('ethers');
 const escrowContract = require('./build/polygon/testnet/Escrow/Escrow.json');
 export const CurrentStatus = {
@@ -120,23 +127,24 @@ function EscrowDetails(props) {
   };
 
   return (
-    <div style={{ border: '1px solid black', padding: '10px' }}>
+    <div className="escrow-details">
+    {/* <div style={{ border: '1px solid black', padding: '10px', margin: '2rem' }}>
       <h2>Escrow Details</h2>
       <p>
-        <strong>id :</strong> {Number(id)}
+        <strong>ID :</strong> {Number(id)}
       </p>
       <p>
         <strong>Seller:</strong> {seller}
       </p>
       <p>
-        <strong>buyer:</strong> {buyer}
+        <strong>Buyer:</strong> {buyer}
       </p>
       <p>
-        <strong>token:</strong> {token}
+        <strong>Token:</strong> {token}
       </p>
 
       <p>
-        <strong>amount:</strong> {ethers.utils.formatEther(amount)}
+        <strong>Amount:</strong> {ethers.utils.formatEther(amount)}
       </p>
 
       <p>
@@ -158,6 +166,51 @@ function EscrowDetails(props) {
           <button onClick={handleWithdraw}> Withdraw Tokens</button>
         )}
       </>
+    </div> */}
+    <Card variant="outlined" sx={{ width: 500, margin:'2rem', borderRadius: '1.5rem' }}>
+      <Typography level="h2" fontSize="md" sx={{ mb: 3, mt:2 }}>
+      ID : {Number(id)}
+      </Typography>
+      <b>Seller : </b><Typography variant="solid" color="primary">{seller}</Typography>
+      <br />
+      <br />
+
+      <b>Buyer : </b><Typography variant="solid" color="primary"> {buyer}</Typography>
+      <br />
+      <br />
+      <b>Token : </b><Typography variant="solid" color="primary">{token}</Typography>
+      <br />
+      <br />
+
+      <b> Amount : </b>
+      <Typography variant="solid" color="primary">
+        {ethers.utils.formatEther(amount)}
+      </Typography>
+      <b> Status : </b>
+      <Typography variant="solid" color="primary">
+        {statustext}
+      </Typography>
+
+      <Box sx={{ display: 'flex', padding: '1rem' }}>
+
+      {address === seller && !showconfirm && (
+        <Button variant="contained" onClick={handleConfirm} sx={{ ml: 'right', fontWeight: 600 }}>Confirm</Button>
+      )}
+
+      {address === seller && bool && (
+        <Button
+          onClick={handleCancel}
+          variant="outlined"
+          sx={{ ml: 'auto', fontWeight: 600 }}>
+          Cancel
+        </Button>
+      )}
+
+      {address === seller && !bool && (
+          <Button variant="outlined" onClick={handleWithdraw} sx={{ ml: 'auto', fontWeight: 600 }}> Withdraw Tokens</Button>
+        )}
+      </Box>
+    </Card>
     </div>
   );
 }

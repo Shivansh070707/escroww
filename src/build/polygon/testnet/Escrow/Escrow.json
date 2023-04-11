@@ -1,10 +1,22 @@
 {
-  "address": "0x8bBE40b7d4DeCB1e53A50650E1E711d46458d96D",
+  "address": "0x61127fFF0156bD87Ce03985A372c4A4912633497",
   "network": {
     "name": "maticmum",
     "chainId": 80001
   },
   "abi": [
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "Initialized",
+      "inputs": [
+        {
+          "type": "uint8",
+          "name": "version",
+          "indexed": false
+        }
+      ]
+    },
     {
       "type": "event",
       "anonymous": false,
@@ -248,25 +260,6 @@
               "name": "status"
             }
           ]
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "getEscrowBalance",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "id"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "uint256",
-          "name": "bal"
         }
       ]
     },
