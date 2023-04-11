@@ -14,6 +14,11 @@
       "address": "0x37ecCC5093869756dec26097Aad40025b182e1AD",
       "txHash": "0x7567047f7bde1f0816236fdfc594c5eccd1cfee360a8ab11ea4277099b3faef0",
       "kind": "transparent"
+    },
+    {
+      "address": "0x61127fFF0156bD87Ce03985A372c4A4912633497",
+      "txHash": "0x8c7ebde16b67fe1ff21a6916cc716f7706000c4490bf87dfcbfd027ab3a7d15b",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -79,6 +84,172 @@
             "type": "t_struct(Counter)531_storage",
             "contract": "Escrow",
             "src": "contracts\\Escrow.sol:33"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_enum(Status)1995": {
+            "label": "enum Escrow.Status",
+            "members": [
+              "active",
+              "released",
+              "withdrawn",
+              "cancelled"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_uint256,t_struct(EscrowRequest)1990_storage)": {
+            "label": "mapping(uint256 => struct Escrow.EscrowRequest)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Counter)531_storage": {
+            "label": "struct CountersUpgradeable.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(EscrowRequest)1990_storage": {
+            "label": "struct Escrow.EscrowRequest",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "seller",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "buyer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "expiry",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(Status)1995",
+                "offset": 0,
+                "slot": "6"
+              }
+            ],
+            "numberOfBytes": "224"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "d5156bc85a69c002f209f474799fd86eea43749895aa3b3f2168e6fc106a7702": {
+      "address": "0x769EAcDCcd5e6B9A9f63CDbb0072c948ED276f09",
+      "txHash": "0xfd3bcfe1e14dbbff49a2289f5627ab567cc22fa07d415e90925960269e647899",
+      "layout": {
+        "solcVersion": "0.8.17",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "escrowRequests",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_mapping(t_uint256,t_struct(EscrowRequest)1990_storage)",
+            "contract": "Escrow",
+            "src": "contracts\\Escrow.sol:30"
+          },
+          {
+            "label": "escrowBalances",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "Escrow",
+            "src": "contracts\\Escrow.sol:32"
+          },
+          {
+            "label": "totalRequests",
+            "offset": 0,
+            "slot": "53",
+            "type": "t_struct(Counter)531_storage",
+            "contract": "Escrow",
+            "src": "contracts\\Escrow.sol:34"
           }
         ],
         "types": {
