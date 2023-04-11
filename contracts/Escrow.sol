@@ -1,13 +1,13 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
-contract Escrow is ReentrancyGuard {
+contract Escrow is ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
-    using Counters for Counters.Counter;
+    using CountersUpgradeable for CountersUpgradeable.Counter;
     //stores all the details of an escrow
     struct EscrowRequest {
         uint256 id;
@@ -30,7 +30,7 @@ contract Escrow is ReentrancyGuard {
     //mapping of escrow id to balance
     mapping(uint256 => uint256) escrowBalances;
     //represents the total number of requests
-    Counters.Counter totalRequests;
+    CountersUpgradeable.Counter totalRequests;
     //checks if the id passed is valid
     modifier checkIsValid(uint256 id) {
         require(id < totalRequests.current(), "Invalid Id");
